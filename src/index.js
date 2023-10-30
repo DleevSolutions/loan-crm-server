@@ -5,9 +5,8 @@ const { infoLogger } = require('./config/logger2');
 
 let server;
 // Launch App
-server = app.listen(config.port, config.localIP, () => {
+server = app.listen(config.port, () => {
   infoLogger(`Localhost: ${config.port}`);
-  infoLogger(`LAN: ${config.localIP}`);
 });
 
 const exitHandler = () => {
