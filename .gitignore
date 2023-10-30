@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# npm log
+package-lock.json
+
+# Environment varibales
+.env.development
+.env.production
+!.env.production.example
+!.env.development.example
+
+# Code coverage
+coverage
+
+# log
+error.log
+.log
+
+# Database
+tempDatabase.sql
