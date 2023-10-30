@@ -10,7 +10,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start:prod": "env-cmd -f env/.env.production pm2 start ecosystem.config.json --no-daemon",
+    "start:prod": "pm2 start ecosystem.config.json --no-daemon",
     "start": "env-cmd -f env/.env.development nodemon src/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
