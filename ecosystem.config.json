@@ -4,7 +4,7 @@
       "name": "loan_crm_server",
       "script": "src/index.js",
       "instances": 1,
-      "autorestart": true,
+      "autorestart": false,
       "watch": false,
       "time": true,
       "env": {
