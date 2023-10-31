@@ -11,14 +11,11 @@ const routes = require('./routes/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
 const db = require('./models');
-const { infoLogger, errorLogger } = require('./config/logger2');
+const pidusage = require('pidusage');
 
 const app = express();
 
-if (config.env !== 'test') {
-  app.use(morgan.successHandler);
-  app.use(morgan.errorHandler);
-}
+pidusage(process.pid, { usePs: true });
 
 // set security HTTP headers
 app.use(helmet());
