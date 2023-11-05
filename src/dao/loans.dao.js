@@ -70,7 +70,7 @@ function createLoansDao() {
         },
         {
           model: members,
-          attributes: ['nickname'],
+          attributes: ['nickname', 'member_id'],
         },
         {
           model: payments,
@@ -93,7 +93,6 @@ function createLoansDao() {
     const query = {
       where: {
         ...whereCondition,
-        non_performing: false,
       },
     };
 
@@ -127,10 +126,7 @@ function createLoansDao() {
    * @returns {Promise<results>}
    */
   async function findAllNonPerformingLoans(payload) {
-    const { user_id, role, start_date, end_date } = payload;
-    const format_start_date = new Date(start_date);
-    const format_end_date = new Date(end_date);
-    format_end_date.setDate(format_end_date.getDate() + 1); // add one day for end date
+    const { user_id, role } = payload;
 
     const options = {
       include: [
@@ -140,7 +136,147 @@ function createLoansDao() {
         },
         {
           model: members,
-          attributes: ['nickname'],
+          attributes: ['nickname', 'member_id'],
+        },
+        {
+          model: payments,
+          as: 'loanPayments',
+          attributes: ['amount'],
+        },
+        {
+          model: penalties,
+          as: 'loanPenalties',
+          attributes: ['amount'],
+        },
+      ],
+    };
+
+    const findRelatedUser = await superDaoUsers.findAll({}, { where: { created_by: user_id }, attributes: ['user_id'] });
+    const allUsersID = findRelatedUser.flatMap((item) => item.user_id).concat([user_id]);
+    const whereCondition =
+      role === 'AGENT' ? { created_by: user_id } : role === 'SUPERVISOR' ? { created_by: allUsersID } : {};
+
+    const query = {
+      where: {
+        ...whereCondition,
+        non_performing: true,
+        status: true,
+      },
+    };
+
+    const results = await superDaoLoans.findAll(options, query);
+    const calculatedData = results
+      .filter((item) => {
+        const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
+        const balance = parseFloat(loanPayments) - (parseFloat(item.full_amount) + parseFloat(loanPenalties));
+        if (parseFloat(balance) >= 0) {
+          return false;
+        } else {
+          return true;
+        }
+      })
+      .map((item) => {
+        const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
+        return {
+          ...item.toJSON(),
+          loan_amount: parseFloat(item.loan_amount),
+          totalPayments: item.loanPayments.length,
+          loanPayments: loanPayments,
+          loanPenalties: loanPenalties,
+        };
+      });
+
+    // Get only incomplete loan
+
+    const final = {
+      draw: 1,
+      recordsTotal: results.length,
+      recordsFiltered: results.length,
+      data: calculatedData,
+    };
+    return final;
+  }
+  // async function findAllNonPerformingLoans(payload) {
+  //   const { user_id, role, start_date, end_date } = payload;
+  //   const format_start_date = new Date(start_date);
+  //   const format_end_date = new Date(end_date);
+  //   format_end_date.setDate(format_end_date.getDate() + 1); // add one day for end date
+
+  //   const options = {
+  //     include: [
+  //       {
+  //         model: users,
+  //         attributes: ['username'],
+  //       },
+  //       {
+  //         model: members,
+  //         attributes: ['nickname'],
+  //       },
+  //       {
+  //         model: payments,
+  //         as: 'loanPayments',
+  //         attributes: ['amount'],
+  //       },
+  //       {
+  //         model: penalties,
+  //         as: 'loanPenalties',
+  //         attributes: ['no', 'amount', 'created_at'],
+  //       },
+  //     ],
+  //   };
+
+  //   const findRelatedUser = await superDaoUsers.findAll({}, { where: { created_by: user_id }, attributes: ['user_id'] });
+  //   const allUsersID = findRelatedUser.flatMap((item) => item.user_id).concat([user_id]);
+  //   const whereCondition =
+  //     role === 'AGENT' ? { created_by: user_id } : role === 'SUPERVISOR' ? { created_by: allUsersID } : {};
+
+  //   const query = {
+  //     where: {
+  //       ...whereCondition,
+  //       non_performing: true,
+  //       approved_at: {
+  //         [models.Sequelize.Op.between]: [format_start_date, format_end_date],
+  //       },
+  //     },
+  //   };
+
+  //   const results = await superDaoLoans.findAll(options, query);
+
+  //   const calculatedData = results.map((item) => {
+  //     return {
+  //       ...item.toJSON(),
+  //       loan_amount: parseFloat(item.loan_amount),
+  //       totalPayments: item.loanPayments.length,
+  //       loanPayments: item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0),
+  //       loanPenalties: item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0),
+  //       penalties: item.loanPenalties,
+  //       loan_info: getLoanInfo(item),
+  //     };
+  //   });
+
+  //   const final = {
+  //     draw: 1,
+  //     recordsTotal: results.length,
+  //     recordsFiltered: results.length,
+  //     data: calculatedData,
+  //   };
+  //   return final;
+  // }
+
+  async function findLoanHistory(payload) {
+    const { user_id, role, member_id, non_performing } = payload;
+
+    const options = {
+      include: [
+        {
+          model: users,
+          attributes: ['username'],
+        },
+        {
+          model: members,
+          attributes: ['nickname', 'member_id'],
         },
         {
           model: payments,
@@ -163,10 +299,8 @@ function createLoansDao() {
     const query = {
       where: {
         ...whereCondition,
-        non_performing: true,
-        approved_at: {
-          [models.Sequelize.Op.between]: [format_start_date, format_end_date],
-        },
+        member_id: member_id,
+        non_performing: non_performing === 'true' ? true : false,
       },
     };
 
@@ -324,6 +458,7 @@ function createLoansDao() {
   return {
     findAllLoans,
     findAllNonPerformingLoans,
+    findLoanHistory,
     createLoan,
     approveLoan,
     updateLoan,

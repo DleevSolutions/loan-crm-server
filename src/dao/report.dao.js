@@ -6,19 +6,34 @@ const { v4 } = require('uuid');
 
 const loans = models.loans;
 const users = models.users;
+const members = models.members;
 const payments = models.payments;
 const penalties = models.penalties;
 const expenses = models.expenses;
 
 function createReportDao() {
   const superDaoLoans = createSuperDao(loans);
+  const superDaoPayments = createSuperDao(payments);
   const superDaoUsers = createSuperDao(users);
   const superDaoExpenses = createSuperDao(expenses);
 
-  async function findLoans(query, status) {
+  async function findLoans(query) {
     const options = {
-      attributes: ['loan_amount', 'full_amount', 'stamp'],
+      attributes: [
+        'loan_id',
+        'no',
+        'loan_amount',
+        'full_amount',
+        'collection_per_day',
+        'collection_times',
+        'created_by',
+        'stamp',
+      ],
       include: [
+        {
+          model: members,
+          attributes: ['nickname'],
+        },
         {
           model: payments,
           as: 'loanPayments',
@@ -35,49 +50,36 @@ function createReportDao() {
     const results = await superDaoLoans.findAll(options, {
       where: {
         ...query,
-        ...status,
       },
     });
 
     const final = results.map((item) => {
-      const loanPaymentsSum = item.loanPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2);
-      const loanPenaltiesSum = item.loanPenalties.reduce((sum, penalty) => sum + parseFloat(penalty.amount), 0).toFixed(2);
-
       return {
-        loan_amount: item.loan_amount,
-        full_amount: item.full_amount,
+        customer: item.member.nickname,
+        loan: item.no,
+        collection_per_day: item.collection_per_day,
+        installment: item.loan_amount,
+        received: 0,
         stamp: item.stamp,
-        loanPayments: loanPaymentsSum,
-        loanPenalties: loanPenaltiesSum,
+        type: 'Loan',
       };
     });
 
-    const summarized = final.reduce(
-      (acc, item) => {
-        acc.total_loan_amount += parseFloat(item.loan_amount);
-        acc.total_full_amount += parseFloat(item.full_amount);
-        acc.total_stamp += parseFloat(item.stamp);
-        acc.total_payments += parseFloat(item.loanPayments);
-        acc.total_penalties += parseFloat(item.loanPenalties);
-
-        return acc;
-      },
-      {
-        total_loan_amount: 0,
-        total_full_amount: 0,
-        total_stamp: 0,
-        total_payments: 0,
-        total_penalties: 0,
-      }
-    );
-
-    return {
-      ...summarized,
-      total_loan: results.length,
-    };
+    return final;
   }
 
-  const allType = ['Balai', 'Gang', 'Medical', 'Petrol', 'Phone', 'Repair/Service', 'Salary', 'Stamp', 'Stationery'];
+  const allType = [
+    'LoanDepositRefund',
+    'Balai',
+    'Gang',
+    'Medical',
+    'Petrol',
+    'Phone',
+    'Repair/Service',
+    'Salary',
+    'Stamp',
+    'Stationery',
+  ];
 
   /**
    * * Group by expenses type
@@ -112,12 +114,126 @@ function createReportDao() {
     return data;
   }
 
+  async function findPayments(query, start_date, end_date) {
+    const options = {
+      include: [
+        {
+          model: members,
+          attributes: ['nickname'],
+        },
+        {
+          model: payments,
+          as: 'loanPayments',
+          attributes: ['amount', 'type'],
+          where: {
+            created_at: {
+              [models.Sequelize.Op.between]: [start_date, end_date],
+            },
+          },
+        },
+        {
+          model: penalties,
+          as: 'loanPenalties',
+          attributes: ['amount'],
+        },
+      ],
+    };
+
+    const results = await superDaoLoans.findAll(options, {
+      attributes: ['loan_id', 'no', 'collection_per_day', 'collection_times', 'created_by'],
+      where: {
+        ...query,
+      },
+    });
+
+    function settlePenalties(paidPenalty, penalties) {
+      let penaltiesSettled = 0;
+      let remainingPenalty = parseFloat(paidPenalty);
+
+      for (const penalty of penalties) {
+        const penaltyAmount = parseFloat(penalty.amount);
+
+        if (remainingPenalty >= penaltyAmount) {
+          remainingPenalty -= penaltyAmount;
+          penaltiesSettled++;
+        } else {
+          break; // Stop iterating if the remaining penalty is not enough to cover the current penalty
+        }
+      }
+
+      return penaltiesSettled;
+    }
+
+    const loanIDs = results.map((item) => {
+      return item.loan_id;
+    });
+
+    const allPayments = await superDaoPayments.findAll(
+      {},
+      {
+        attributes: ['loan_id', 'amount', 'type'],
+        where: {
+          loan_id: loanIDs,
+        },
+      }
+    );
+
+    const final = results.map((item) => {
+      const paymentLoan = allPayments
+        .filter((payment) => payment.type === 'LOAN' && payment.loan_id === item.loan_id)
+        .reduce((sum, payment) => sum + parseFloat(payment.amount), 0)
+        .toFixed(2);
+      const paymentPenalty = allPayments
+        .filter((payment) => payment.type === 'PENALTY' && payment.loan_id === item.loan_id)
+        .reduce((sum, payment) => sum + parseFloat(payment.amount), 0)
+        .toFixed(2);
+
+      const paidLoan = parseFloat(paymentLoan) / parseFloat(item.collection_per_day);
+      const paidPenalty = settlePenalties(paymentPenalty, item.loanPenalties);
+
+      const totalPaidPeriod = parseInt(paidLoan) + parseInt(paidPenalty);
+      const totalPayablePeriod = parseFloat(item.loanPenalties.length) + parseFloat(item.collection_times);
+
+      return {
+        allPayments: allPayments,
+        customer: item.member.nickname,
+        loan: item.no,
+        collection_per_day: item.collection_per_day,
+        installment: `${totalPaidPeriod}/${totalPayablePeriod}`,
+        received: item.loanPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2),
+        stamp: 0,
+        type: 'Payment',
+      };
+    });
+
+    return final;
+  }
+
+  async function findAllUsers(payload) {
+    const { user_id, role } = payload;
+
+    const findRelatedUser = await superDaoUsers.findAll({}, { where: { created_by: user_id }, attributes: ['user_id'] });
+    const allUsersID = findRelatedUser.flatMap((item) => item.user_id).concat([user_id]);
+    const whereCondition =
+      role === 'AGENT' ? { created_by: user_id } : role === 'SUPERVISOR' ? { created_by: allUsersID } : {};
+
+    const query = {
+      attributes: ['user_id', 'username'],
+      where: {
+        ...whereCondition,
+      },
+    };
+
+    const results = await superDaoUsers.findAll({}, query);
+    return results;
+  }
+
   /**
    * * Get report
    * @returns {Promise<results>}
    */
   async function findReport(payload) {
-    const { user_id, role, start_date, end_date } = payload;
+    const { user_id, role, start_date, end_date, selected_user = 'na' } = payload;
     const format_start_date = new Date(start_date);
     const format_end_date = new Date(end_date);
     format_end_date.setDate(format_end_date.getDate() + 1); // add one day for end date
@@ -126,17 +242,24 @@ function createReportDao() {
     const allUsersID = findRelatedUser.flatMap((item) => item.user_id).concat([user_id]);
     const whereCondition =
       role === 'AGENT' ? { created_by: user_id } : role === 'SUPERVISOR' ? { created_by: allUsersID } : {};
+    const formatCondition =
+      selected_user === 'na' || selected_user === 'all' ? whereCondition : { created_by: selected_user };
 
     const loanQuery = {
-      ...whereCondition,
+      ...formatCondition,
       //* get created_at between the start_date and end_date
       approved_at: {
         [models.Sequelize.Op.between]: [format_start_date, format_end_date],
       },
     };
+
+    const paymentQuery = {
+      ...formatCondition,
+    };
+
     const expensesQuery = {
       where: {
-        ...whereCondition,
+        ...formatCondition,
         status: true,
         //* get created_at between the start_date and end_date
         created_at: {
@@ -145,14 +268,15 @@ function createReportDao() {
       },
     };
 
-    const allLoans = await findLoans(loanQuery, { status: true });
-    const allNonPerformingLoan = await findLoans(loanQuery, { status: false });
+    const allLoans = await findLoans(loanQuery);
+    const allPayments = await findPayments(paymentQuery, format_start_date, format_end_date);
     const allExpenses = await findExpenses(expensesQuery);
+    const allUsers = await findAllUsers(payload);
 
     return {
-      loan_data: allLoans,
-      loan_non_performing_data: allNonPerformingLoan,
+      loan_data: [...allLoans, ...allPayments],
       expenses_data: allExpenses,
+      allUsers: allUsers,
     };
   }
 

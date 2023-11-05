@@ -28,7 +28,8 @@ module.exports = {
   port: envVars.PORT,
   localIP: envVars.LOCAL_IP,
   db_config: {
-    dbHost: 'srv594.hstgr.io',
+    // dbHost: 'srv594.hstgr.io',
+    dnHost: envVars.DB_HOST,
     dbUser: envVars.DB_USER,
     dbPassword: envVars.DB_PASSWORD,
     dbName: envVars.DB_NAME,

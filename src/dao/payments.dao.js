@@ -163,7 +163,7 @@ function createPaymentsDao() {
     createdDateWithoutTime.setHours(0, 0, 0, 0);
     // Check if currentDateWithoutTime is on or before createdDateWithoutTime
     const isDeletable = currentDateWithoutTime <= createdDateWithoutTime;
-    if (!isDeletable && role === 'AGENT') throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'PAYMENT_CLOSED');
+    if (!isDeletable) throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'PAYMENT_CLOSED');
 
     const results = await superDaoPayments.remove({ payment_id });
     return results;

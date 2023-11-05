@@ -11,6 +11,11 @@ const findAllArchiveLoans = async (query) => {
   return results;
 };
 
+const findLoanHistory = async (query) => {
+  const results = await loansDao.findLoanHistory(query);
+  return results;
+};
+
 const createLoan = async (payload) => {
   const results = await loansDao.createLoan(payload);
   return results;
@@ -29,6 +34,7 @@ const deleteLoan = async (query) => {
 module.exports = {
   findAllLoans,
   findAllArchiveLoans,
+  findLoanHistory,
   createLoan,
   updateLoan,
   deleteLoan,

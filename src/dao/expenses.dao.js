@@ -148,7 +148,7 @@ function createExpensesDao() {
     createdDateWithoutTime.setHours(0, 0, 0, 0);
     // Check if currentDateWithoutTime is on or before createdDateWithoutTime
     const isDeletable = currentDateWithoutTime <= createdDateWithoutTime;
-    if (!isDeletable && role === 'AGENT') throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'EXPENSES_CLOSED');
+    if (!isDeletable) throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'EXPENSES_CLOSED');
 
     const results = await superDaoExpenses.remove({ expenses_id });
     return results;

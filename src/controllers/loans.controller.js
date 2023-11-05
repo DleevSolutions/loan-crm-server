@@ -14,6 +14,12 @@ const findAllArchiveLoans = catchAsync(async (req, res) => {
   res.status(200).send(results);
 });
 
+const findLoanHistory = catchAsync(async (req, res) => {
+  const results = await loansService.findLoanHistory(req.query);
+
+  res.status(200).send(results);
+});
+
 const createLoan = catchAsync(async (req, res) => {
   const { body, query } = req;
   const payload = { body, query };
@@ -39,6 +45,7 @@ const deleteLoan = catchAsync(async (req, res) => {
 module.exports = {
   findAllLoans,
   findAllArchiveLoans,
+  findLoanHistory,
   createLoan,
   updateLoan,
   deleteLoan,

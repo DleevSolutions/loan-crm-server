@@ -4,6 +4,7 @@ const router = express.Router();
 
 router.get('/find', loansController.findAllLoans);
 router.get('/find-archive', loansController.findAllArchiveLoans);
+router.get('/find-history', loansController.findLoanHistory);
 router.post('/create', loansController.createLoan);
 router.put('/update', loansController.updateLoan);
 router.delete('/delete', loansController.deleteLoan);

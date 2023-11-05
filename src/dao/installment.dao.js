@@ -21,10 +21,7 @@ function createInstallmentDao() {
    * @returns {Promise<results>}
    */
   async function findAllInstallments(payload) {
-    const { user_id, role, start_date, end_date } = payload;
-    const format_start_date = new Date(start_date);
-    const format_end_date = new Date(end_date);
-    format_end_date.setDate(format_end_date.getDate() + 1); // add one day for end date
+    const { user_id, role } = payload;
 
     const options = {
       include: [
@@ -34,17 +31,17 @@ function createInstallmentDao() {
         },
         {
           model: members,
-          attributes: ['nickname'],
+          attributes: ['nickname', 'member_id'],
         },
         {
           model: payments,
           as: 'loanPayments',
-          attributes: ['amount'],
+          attributes: ['amount', 'type'],
         },
         {
           model: penalties,
           as: 'loanPenalties',
-          attributes: ['amount'],
+          attributes: ['amount', 'pay_date'],
         },
       ],
     };
@@ -59,23 +56,47 @@ function createInstallmentDao() {
         ...whereCondition,
         non_performing: false,
         status: true,
-        approved_at: {
-          [models.Sequelize.Op.between]: [format_start_date, format_end_date],
-        },
       },
     };
 
     const results = await superDaoLoans.findAll(options, query);
 
-    const calculatedData = results.map((item) => {
-      return {
-        ...item.toJSON(),
-        loan_amount: parseFloat(item.loan_amount),
-        totalPayments: item.loanPayments.length,
-        loanPayments: item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0),
-        loanPenalties: item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0),
-      };
-    });
+    const calculatedData = results
+      .filter((item) => {
+        const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
+        const balance = parseFloat(loanPayments) - (parseFloat(item.full_amount) + parseFloat(loanPenalties));
+
+        if (parseFloat(balance) >= 0) {
+          return false;
+        } else {
+          return true;
+        }
+      })
+      .map((item) => {
+        const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
+
+        const paidLoan = item.loanPayments
+          .filter((item) => item.type === 'LOAN')
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const paidPenalty = item.loanPayments
+          .filter((item) => item.type === 'PENALTY')
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        return {
+          ...item.toJSON(),
+          totalPenalty: item.loanPenalties.length,
+          loan_amount: parseFloat(item.loan_amount),
+          paidLoan: paidLoan,
+          paidPenalty: paidPenalty,
+          penalties: item.loanPenalties.sort((a, b) => new Date(a.pay_date) - new Date(b.pay_date)),
+          totalPayments: item.loanPayments.length,
+          loanPayments: loanPayments,
+          loanPenalties: loanPenalties,
+        };
+      });
+
+    // Get only incomplete loan
 
     const final = {
       draw: 1,
