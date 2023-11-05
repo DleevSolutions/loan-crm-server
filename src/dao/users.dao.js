@@ -137,7 +137,10 @@ function createUsersDao() {
     };
 
     const results = await superDaoUsers.findOne(options, query);
-    return results;
+    return {
+      ...results.toJSON(),
+      account_balance: 0,
+    };
   }
 
   /**
