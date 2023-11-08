@@ -73,7 +73,7 @@ function createReportDao() {
     'Balai',
     'Gang',
     'Medical',
-    'Petrol',
+    'Petro',
     'Phone',
     'Repair/Service',
     'Salary',
