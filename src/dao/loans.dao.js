@@ -179,6 +179,13 @@ function createLoansDao() {
       .map((item) => {
         const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
         const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
+
+        const paidLoan = item.loanPayments
+          .filter((item) => item.type === 'LOAN')
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
+        const paidPenalty = item.loanPayments
+          .filter((item) => item.type === 'PENALTY')
+          .reduce((acc, payment) => acc + parseFloat(payment.amount), 0);
         return {
           ...item.toJSON(),
           totalPenalty: item.loanPenalties.length,
