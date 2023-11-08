@@ -181,8 +181,11 @@ function createLoansDao() {
         const loanPenalties = item.loanPenalties.reduce((acc, penalty) => acc + parseFloat(penalty.amount), 0);
         return {
           ...item.toJSON(),
-          penalties: item.loanPenalties.sort((a, b) => new Date(a.pay_date) - new Date(b.pay_date)),
+          totalPenalty: item.loanPenalties.length,
           loan_amount: parseFloat(item.loan_amount),
+          paidLoan: paidLoan,
+          paidPenalty: paidPenalty,
+          penalties: item.loanPenalties.sort((a, b) => new Date(a.pay_date) - new Date(b.pay_date)),
           totalPayments: item.loanPayments.length,
           loanPayments: loanPayments,
           loanPenalties: loanPenalties,
