@@ -102,7 +102,7 @@ function createExpensesDao() {
       ...body,
       expenses_id: v4(),
       no: no + 1,
-      status: user.role === 'AGENT' ? false : true,
+      status: true,
       created_by: user_id,
     };
 
