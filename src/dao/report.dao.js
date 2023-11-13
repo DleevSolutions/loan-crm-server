@@ -75,7 +75,7 @@ function createReportDao() {
     'Medical',
     'Petro',
     'Phone',
-    'Repair/Sevice',
+    'Repair/Service',
     'Salary',
     'StampRefund',
     'Stationery',
