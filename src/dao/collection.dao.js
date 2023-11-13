@@ -182,7 +182,7 @@ function createCollectionDao() {
     const query = {
       where: {
         ...whereCondition,
-        non_performing: false,
+        // non_performing: false,
         status: true,
       },
     };

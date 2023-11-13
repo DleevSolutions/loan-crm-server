@@ -141,12 +141,12 @@ function createLoansDao() {
         {
           model: payments,
           as: 'loanPayments',
-          attributes: ['amount'],
+          attributes: ['amount', 'type'],
         },
         {
           model: penalties,
           as: 'loanPenalties',
-          attributes: ['amount'],
+          attributes: ['amount', 'pay_date'],
         },
       ],
     };
