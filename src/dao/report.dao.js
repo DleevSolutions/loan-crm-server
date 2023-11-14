@@ -28,6 +28,7 @@ function createReportDao() {
         'collection_times',
         'created_by',
         'stamp',
+        'deposit',
       ],
       include: [
         {
