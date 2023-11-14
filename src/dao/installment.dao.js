@@ -60,7 +60,6 @@ function createInstallmentDao() {
     };
 
     const results = await superDaoLoans.findAll(options, query);
-
     const calculatedData = results
       .filter((item) => {
         const loanPayments = item.loanPayments.reduce((acc, payment) => acc + parseFloat(payment.amount), 0);

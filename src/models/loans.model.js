@@ -27,6 +27,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0.0,
       },
+      deposit: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.0,
+      },
       loan_amount: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
