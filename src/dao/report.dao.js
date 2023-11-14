@@ -204,6 +204,7 @@ function createReportDao() {
         installment: `${totalPaidPeriod}/${totalPayablePeriod}`,
         received: item.loanPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0).toFixed(2),
         stamp: 0,
+        deposit: 0,
         type: 'Payment',
       };
     });
