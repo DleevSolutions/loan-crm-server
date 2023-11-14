@@ -62,6 +62,7 @@ function createReportDao() {
         installment: item.loan_amount,
         received: 0,
         stamp: item.stamp,
+        deposit: item.deposit,
         type: 'Loan',
       };
     });
