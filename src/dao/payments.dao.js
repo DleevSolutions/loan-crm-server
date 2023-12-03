@@ -63,6 +63,7 @@ function createPaymentsDao() {
           [models.Sequelize.Op.between]: [format_start_date, format_end_date],
         },
       },
+      order: [['created_at', 'DESC']],
     };
 
     const results = await superDaoPayments.findAll(options, query);
