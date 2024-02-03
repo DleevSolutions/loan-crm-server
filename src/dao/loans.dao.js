@@ -409,7 +409,12 @@ function createLoansDao() {
       created_by: user_id,
     };
 
-    await superDaoLoans.create(data);
+    if (body.full_amount !== '0.00' && body.full_amount !== '0' && body.full_amount !== 0) {
+      await superDaoLoans.create(data);
+    } else {
+      throw new ApiError(httpStatus.UNAUTHORIZED, 'EMPTY_LOAN');
+    }
+
     const results = await findLoan(data.loan_id);
 
     return results;

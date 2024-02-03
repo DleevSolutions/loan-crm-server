@@ -52,4 +52,8 @@ module.exports.ErrorCode = {
     code: 'LOAN_IS_NOT_CLEAR',
     description: 'Loan is not clear',
   },
+  EMPTY_LOAN: {
+    code: 'EMPTY_LOAN',
+    description: 'Empty loan is not allow to create',
+  },
 };
