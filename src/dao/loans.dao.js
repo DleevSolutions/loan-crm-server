@@ -383,9 +383,25 @@ function createLoansDao() {
    * * Count total loan for user
    * @returns {Promise<results>}
    */
+  // async function countCreatedLoans(user_id) {
+  //   const results = await superDaoLoans.count({ created_by: user_id });
+  //   return results;
+  // }
   async function countCreatedLoans(user_id) {
-    const results = await superDaoLoans.count({ created_by: user_id });
-    return results;
+    const results = await superDaoLoans.findAll({}, { created_by: user_id });
+    if (results?.length > 0) {
+      // Extract 'no' values from the results
+      const noValues = results?.map((loan) => loan.no);
+
+      // Find the largest 'no' value
+      const largestNo = Math.max(...noValues);
+
+      // Return the largest 'no' value
+      return largestNo;
+    } else {
+      // Return null if no loans are found
+      return 0;
+    }
   }
 
   /**
