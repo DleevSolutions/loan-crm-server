@@ -7,7 +7,7 @@
   "author": "Eason Lim <eason.at.dev@gmail.com>",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.9.0"
   },
   "scripts": {
     "start:prod": "pm2 start ecosystem.config.json --no-daemon",
