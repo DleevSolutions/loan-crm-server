@@ -133,27 +133,27 @@ function createMembersDao() {
     } = payload;
 
     const isMemberExisted = await superDaoMembers.findOne({}, { where: { nickname: body.nickname.trim() } });
-    const isCurrentUserName = isMemberExisted.nickname.trim() === body.nickname.trim();
-    if (isMemberExisted && !isCurrentUserName) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
+    // const isCurrentUserName = isMemberExisted.nickname.trim() === body.nickname.trim();
+    // if (isMemberExisted && !isCurrentUserName) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
 
-    await superDaoMembers.update(body, { member_id });
-    const results = await findMember(member_id);
-    return results;
+    // await superDaoMembers.update(body, { member_id });
+    // const results = await findMember(member_id);
+    // return results;
 
-    // const currentUser = await superDaoMembers.findOne({}, { where: { member_id: member_id } });
+    const currentUser = await superDaoMembers.findOne({}, { where: { member_id: member_id } });
 
-    // const isCurrentUserName = isMemberExisted?.nickname.trim() === currentUser.nickname.trim();
+    const isCurrentUserName = isMemberExisted?.nickname.trim() === currentUser.nickname.trim();
 
-    // if (isCurrentUserName) {
-    //   await superDaoMembers.update(body, { member_id });
-    //   const results = await findMember(member_id);
-    //   return results;
-    // } else {
-    //   if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
-    //   await superDaoMembers.update(body, { member_id });
-    //   const results = await findMember(member_id);
-    //   return results;
-    // }
+    if (isCurrentUserName) {
+      await superDaoMembers.update(body, { member_id });
+      const results = await findMember(member_id);
+      return results;
+    } else {
+      if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
+      await superDaoMembers.update(body, { member_id });
+      const results = await findMember(member_id);
+      return results;
+    }
   }
 
   async function checkLoanBalance(member_id) {
