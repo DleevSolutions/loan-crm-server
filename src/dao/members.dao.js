@@ -91,8 +91,20 @@ function createMembersDao() {
    * @returns {Promise<results>}
    */
   async function countCreatedMember(user_id) {
-    const results = await superDaoMembers.count({ created_by: user_id });
-    return results;
+    const results = await superDaoMembers.findAll({}, { created_by: user_id });
+    if (results?.length > 0) {
+      // Extract 'no' values from the results
+      const noValues = results?.map((member) => member.no);
+
+      // Find the largest 'no' value
+      const largestNo = Math.max(...noValues);
+
+      // Return the largest 'no' value
+      return largestNo;
+    } else {
+      // Return null if no loans are found
+      return 0;
+    }
   }
 
   /**
@@ -106,8 +118,9 @@ function createMembersDao() {
       body,
       query: { user_id },
     } = payload;
-    const isMemberExisted = await superDaoMembers.findOne({}, { where: { nickname: body.nickname.trim() } });
-    if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
+
+    // const isMemberExisted = await superDaoMembers.findOne({}, { where: { nickname: body.nickname.trim() } });
+    // if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
 
     const no = await countCreatedMember(user_id);
     const data = {
@@ -133,6 +146,8 @@ function createMembersDao() {
     } = payload;
 
     const isMemberExisted = await superDaoMembers.findOne({}, { where: { nickname: body.nickname.trim() } });
+
+    // ** First Version ** //
     // const isCurrentUserName = isMemberExisted.nickname.trim() === body.nickname.trim();
     // if (isMemberExisted && !isCurrentUserName) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
 
@@ -140,20 +155,25 @@ function createMembersDao() {
     // const results = await findMember(member_id);
     // return results;
 
-    const currentUser = await superDaoMembers.findOne({}, { where: { member_id: member_id } });
+    // ** Second Version ** //
+    // const currentUser = await superDaoMembers.findOne({}, { where: { member_id: member_id } });
 
-    const isCurrentUserName = isMemberExisted?.nickname.trim() === currentUser.nickname.trim();
+    // const isCurrentUserName = isMemberExisted?.nickname.trim() === currentUser.nickname.trim();
 
-    if (isCurrentUserName) {
-      await superDaoMembers.update(body, { member_id });
-      const results = await findMember(member_id);
-      return results;
-    } else {
-      if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
-      await superDaoMembers.update(body, { member_id });
-      const results = await findMember(member_id);
-      return results;
-    }
+    // if (isCurrentUserName) {
+    //   await superDaoMembers.update(body, { member_id });
+    //   const results = await findMember(member_id);
+    //   return results;
+    // } else {
+    //   if (isMemberExisted) throw new ApiError(httpStatus.CONFLICT, 'MEMBER_EXISTED');
+    //   await superDaoMembers.update(body, { member_id });
+    //   const results = await findMember(member_id);
+    //   return results;
+    // }
+
+    await superDaoMembers.update(body, { member_id });
+    const results = await findMember(member_id);
+    return results;
   }
 
   async function checkLoanBalance(member_id) {
