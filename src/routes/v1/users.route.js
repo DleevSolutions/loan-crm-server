@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/find', usersController.findAllUsers);
 router.post('/create', usersController.createUser);
-router.put('/update', usersController.updateUser);
+router.post('/update', usersController.updateUser);
 router.delete('/delete', usersController.deleteUser);
 
 module.exports = router;

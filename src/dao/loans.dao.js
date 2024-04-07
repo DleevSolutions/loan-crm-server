@@ -417,11 +417,12 @@ function createLoansDao() {
     } = payload;
     const no = await countCreatedLoans(user_id);
     const user = await superDaoUsers.findByPk(user_id);
+    console.log(user);
     const data = {
       ...body,
       loan_id: v4(),
       no: no + 1,
-      status: user.role === 'AGENT' ? false : true,
+      status: user?.role === 'AGENT' ? false : true,
       created_by: user_id,
     };
 

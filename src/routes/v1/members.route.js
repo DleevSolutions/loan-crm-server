@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/find', membersController.findAllMembers);
 router.post('/create', membersController.createMember);
-router.put('/update', membersController.updateMember);
+router.post('/update', membersController.updateMember);
 router.delete('/delete', membersController.deleteMember);
 
 module.exports = router;

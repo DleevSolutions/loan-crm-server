@@ -4,7 +4,7 @@ const router = express.Router();
 
 router.get('/find', paymentsController.findAllPayments);
 router.post('/create', paymentsController.createPayment);
-router.put('/update', paymentsController.updatePayment);
+router.post('/update', paymentsController.updatePayment);
 router.delete('/delete', paymentsController.deletePayment);
 
 module.exports = router;

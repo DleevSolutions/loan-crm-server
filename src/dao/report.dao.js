@@ -81,6 +81,7 @@ function createReportDao() {
     'Salary',
     'StampRefund',
     'Stationery',
+    'CarLoan',
   ];
 
   /**
