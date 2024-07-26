@@ -198,7 +198,7 @@ function createReportDao() {
       const totalPayablePeriod = parseFloat(item.loanPenalties.length) + parseFloat(item.collection_times);
 
       return {
-        allPayments: allPayments,
+        // allPayments: allPayments,
         customer: item.member.nickname,
         loan: item.no,
         collection_per_day: item.collection_per_day,
